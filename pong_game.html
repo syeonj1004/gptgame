@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pong Game</title>
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="pongCanvas" width="800" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById('pongCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const paddleWidth = 10;
+    const paddleHeight = 100;
+    const ballRadius = 10;
+    const winScore = 11;
+
+    let leftPaddle = { x: 10, y: canvas.height / 2 - paddleHeight / 2, speed: 6 };
+    let rightPaddle = { x: canvas.width - 20, y: canvas.height / 2 - paddleHeight / 2, speed: 6 };
+    // 속도를 절반으로 조정 (speedX: 2.5, speedY: 1.5)
+    let ball = { x: canvas.width / 2, y: canvas.height / 2, speedX: 2.5, speedY: 1.5 };
+    let scores = { left: 0, right: 0 };
+    let upPressed = false;
+    let downPressed = false;
+    let wPressed = false;
+    let sPressed = false;
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawText(text, x, y, color) {
+      ctx.fillStyle = color;
+      ctx.font = '32px Arial';
+      ctx.fillText(text, x, y);
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.speedX = -ball.speedX;
+      // 리셋 시 Y 속도도 절반으로 유지 (1.5)
+      ball.speedY = 1.5 * (Math.random() > 0.5 ? 1 : -1);
+    }
+
+    function draw() {
+      // 배경
+      drawRect(0, 0, canvas.width, canvas.height, '#000');
+
+      // 테두리 라인
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // 패들
+      drawRect(leftPaddle.x, leftPaddle.y, paddleWidth, paddleHeight, '#FFF');
+      drawRect(rightPaddle.x, rightPaddle.y, paddleWidth, paddleHeight, '#FFF');
+
+      // 공 (빨간색)
+      drawCircle(ball.x, ball.y, ballRadius, '#F00');
+
+      // 점수
+      drawText(scores.left, canvas.width / 4, 50, '#FFF');
+      drawText(scores.right, (canvas.width * 3) / 4, 50, '#FFF');
+    }
+
+    function update() {
+      // 왼쪽 패들 이동 (W/S)
+      if (wPressed && leftPaddle.y > 0) {
+        leftPaddle.y -= leftPaddle.speed;
+      } else if (sPressed && leftPaddle.y < canvas.height - paddleHeight) {
+        leftPaddle.y += leftPaddle.speed;
+      }
+
+      // 오른쪽 패들 이동 (Up/Down)
+      if (upPressed && rightPaddle.y > 0) {
+        rightPaddle.y -= rightPaddle.speed;
+      } else if (downPressed && rightPaddle.y < canvas.height - paddleHeight) {
+        rightPaddle.y += rightPaddle.speed;
+      }
+
+      // 공 이동
+      ball.x += ball.speedX;
+      ball.y += ball.speedY;
+
+      // 상하 벽 충돌 (속도 절반으로 반전)
+      if (ball.y + ballRadius > canvas.height || ball.y - ballRadius < 0) {
+        ball.speedY = -ball.speedY;
+      }
+
+      // 왼쪽 패들 충돌
+      if (
+        ball.x - ballRadius < leftPaddle.x + paddleWidth &&
+        ball.y > leftPaddle.y &&
+        ball.y < leftPaddle.y + paddleHeight
+      ) {
+        ball.speedX = -ball.speedX;
+        const deltaY = ball.y - (leftPaddle.y + paddleHeight / 2);
+        ball.speedY = deltaY * 0.3;
+      }
+
+      // 오른쪽 패들 충돌
+      if (
+        ball.x + ballRadius > rightPaddle.x &&
+        ball.y > rightPaddle.y &&
+        ball.y < rightPaddle.y + paddleHeight
+      ) {
+        ball.speedX = -ball.speedX;
+        const deltaY = ball.y - (rightPaddle.y + paddleHeight / 2);
+        ball.speedY = deltaY * 0.3;
+      }
+
+      // 득점
+      if (ball.x - ballRadius < 0) {
+        scores.right++;
+        resetBall();
+      } else if (ball.x + ballRadius > canvas.width) {
+        scores.left++;
+        resetBall();
+      }
+
+      // 승리 조건
+      if (scores.left === winScore || scores.right === winScore) {
+        alert((scores.left === winScore ? '왼쪽 플레이어' : '오른쪽 플레이어') + ' 승리!');
+        scores.left = 0;
+        scores.right = 0;
+        resetBall();
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // 키 입력 이벤트
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowUp':
+          upPressed = true;
+          break;
+        case 'ArrowDown':
+          downPressed = true;
+          break;
+        case 'w':
+        case 'W':
+          wPressed = true;
+          break;
+        case 's':
+        case 'S':
+          sPressed = true;
+          break;
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      switch (e.key) {
+        case 'ArrowUp':
+          upPressed = false;
+          break;
+        case 'ArrowDown':
+          downPressed = false;
+          break;
+        case 'w':
+        case 'W':
+          wPressed = false;
+          break;
+        case 's':
+        case 'S':
+          sPressed = false;
+          break;
+      }
+    });
+
+    // 게임 시작
+    gameLoop();
+  </script>
+</body>
+</html>

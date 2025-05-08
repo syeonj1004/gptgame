@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>공룡 게임</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #f0f0f0;
+      font-family: sans-serif;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #restartBtn {
+      display: none;
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: white;
+      border: 2px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">점수: 0</div>
+  <button id="restartBtn" onclick="restartGame()">다시 시작</button>
+  <canvas id="gameCanvas" width="800" height="200"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const dinoImg = new Image();
+    dinoImg.src = "dino.png";
+
+    let dinosaur, obstacle, score, gameOver;
+
+    function initGame() {
+      dinosaur = {
+        x: 50,
+        y: 150,
+        width: 40,
+        height: 40,
+        vy: 0,
+        gravity: 1.5,
+        jumpPower: -20,
+        grounded: true
+      };
+
+      obstacle = {
+        x: canvas.width,
+        y: 160,
+        width: 20,
+        height: 40,
+        speed: 6
+      };
+
+      score = 0;
+      gameOver = false;
+      document.getElementById("score").innerText = "점수: 0";
+      restartBtn.style.display = "none";
+    }
+
+    function drawDino() {
+      ctx.drawImage(dinoImg, dinosaur.x, dinosaur.y, dinosaur.width, dinosaur.height);
+    }
+
+    function drawObstacle() {
+      ctx.fillStyle = "#888";
+      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      dinosaur.vy += dinosaur.gravity;
+      dinosaur.y += dinosaur.vy;
+
+      if (dinosaur.y >= 150) {
+        dinosaur.y = 150;
+        dinosaur.vy = 0;
+        dinosaur.grounded = true;
+      }
+
+      obstacle.x -= obstacle.speed;
+
+      if (obstacle.x + obstacle.width < 0) {
+        obstacle.x = canvas.width + Math.random() * 200;
+        score++;
+        document.getElementById("score").innerText = "점수: " + score;
+      }
+
+      if (
+        dinosaur.x < obstacle.x + obstacle.width &&
+        dinosaur.x + dinosaur.width > obstacle.x &&
+        dinosaur.y < obstacle.y + obstacle.height &&
+        dinosaur.y + dinosaur.height > obstacle.y
+      ) {
+        gameOver = true;
+        document.getElementById("score").innerText = "게임 오버! 점수: " + score;
+        restartBtn.style.display = "block";
+        return;
+      }
+
+      drawDino();
+      drawObstacle();
+
+      requestAnimationFrame(update);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && dinosaur.grounded && !gameOver) {
+        dinosaur.vy = dinosaur.jumpPower;
+        dinosaur.grounded = false;
+      }
+    });
+
+    function restartGame() {
+      initGame();
+      update();
+    }
+
+    dinoImg.onload = () => {
+      initGame();
+      update();
+    };
+  </script>
+</body>
+</html>
